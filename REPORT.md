@@ -21,17 +21,20 @@ Security is `1 - attack-success rate`; utility is benign-task success rate.
 
 | defense | security | utility | on frontier |
 |---|---|---|---|
-| no_defense | 0.33 [0.26, 0.41] | 0.99 [0.93, 1.00] | |
-| classifier_only | 0.47 [0.39, 0.55] | 0.99 [0.93, 1.00] | |
-| deterministic | 0.93 [0.88, 0.96] | 0.99 [0.93, 1.00] | |
-| combined | 0.93 [0.88, 0.96] | 0.99 [0.93, 1.00] | |
-| **combined_monitor** | **1.00 [0.98, 1.00]** | **0.99 [0.93, 1.00]** | **yes** |
-| paranoid | 1.00 [0.98, 1.00] | 0.79 [0.68, 0.86] | |
+| no_defense | 0.27 [0.20, 0.34] | 0.92 [0.84, 0.96] | |
+| classifier_only | 0.41 [0.34, 0.49] | 0.92 [0.84, 0.96] | |
+| deterministic | 0.93 [0.87, 0.96] | 0.92 [0.84, 0.96] | |
+| combined | 0.93 [0.87, 0.96] | 0.92 [0.84, 0.96] | |
+| **combined_monitor** | **1.00 [0.98, 1.00]** | **0.92 [0.84, 0.96]** | **yes** |
+| paranoid | 1.00 [0.98, 1.00] | 0.73 [0.62, 0.82] | |
 
-Combined controls plus a trajectory monitor reach full security at no measured utility loss.
-Strict taint (`paranoid`) buys nothing further here and costs 20% of benign throughput,
-because it blocks the legitimate payment motivated by an external invoice. That is the real
-security-utility trade the frontier is meant to expose.
+Utility is a constant 0.92 across every defense from `no_defense` through `combined_monitor`:
+that ceiling is simulated agent error, not a cost of the controls, so the deterministic stack
+plus a trajectory monitor reaches full security with **no defense-induced utility loss**.
+Strict taint (`paranoid`) buys nothing further here and drops utility to 0.73, because it
+blocks the legitimate payment motivated by an external invoice. That is the real
+security-utility trade the frontier is meant to expose. Every number is reproducible: runs are
+seeded and independent of `PYTHONHASHSEED`.
 
 ### 2. A content classifier is structurally insufficient
 Attack-success rate for a susceptible model, by defense (lower is better):

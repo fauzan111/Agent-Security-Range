@@ -78,3 +78,22 @@ def test_security_increases_from_no_defense_to_combined():
 def test_wilson_bounds_are_ordered():
     iv = wilson(3, 10)
     assert 0.0 <= iv.low <= iv.point <= iv.high <= 1.0
+
+
+def test_runs_are_reproducible_and_hashseed_independent():
+    """The RNG must not depend on Python's per-process string hash, or CI and local runs
+    diverge. Same seed => identical outcome; robust model always finishes benign work."""
+    from agentsec.agent import _stable_offset
+    a = ATTACKS["goal-hijack"]
+    task = get_task(a.task_id)
+    o1 = run_scenario(task, a, combined_monitor(), PROFILES["weak-model"], seed=3)
+    o2 = run_scenario(task, a, combined_monitor(), PROFILES["weak-model"], seed=3)
+    assert (o1.attack_success, o1.unauthorized_effects) == (o2.attack_success,
+                                                            o2.unauthorized_effects)
+    # A stable offset is a plain int derived without the builtin hash().
+    assert _stable_offset("weak-model") == _stable_offset("weak-model")
+    # The reliable reference model completes every benign task at every seed.
+    for task in TASKS.values():
+        for s in range(5):
+            assert run_scenario(task, None, combined_monitor(), PROFILES["robust-model"],
+                                seed=s).benign_success

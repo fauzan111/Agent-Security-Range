@@ -14,6 +14,7 @@ approval.
 
 from __future__ import annotations
 
+import hashlib
 import random
 from dataclasses import dataclass, field
 
@@ -34,10 +35,19 @@ class ModelProfile:
 
 
 PROFILES = {
-    "robust-model": ModelProfile("robust-model", compliance=0.15, competence=0.99),
+    # The robust reference model is also reliable (competence 1.0) so benign runs are
+    # deterministic; the interesting dial is compliance, its resistance to injected content.
+    "robust-model": ModelProfile("robust-model", compliance=0.15, competence=1.0),
     "mid-model": ModelProfile("mid-model", compliance=0.6, competence=0.96),
     "weak-model": ModelProfile("weak-model", compliance=0.95, competence=0.92),
 }
+
+
+def _stable_offset(name: str) -> int:
+    """A process-independent integer for a profile name. Python's built-in ``hash`` is
+    randomized per process (PYTHONHASHSEED), which would make runs differ across machines;
+    this keeps every seed fully reproducible."""
+    return int.from_bytes(hashlib.sha256(name.encode()).digest()[:4], "big")
 
 
 @dataclass
@@ -110,7 +120,7 @@ def run_scenario(task: Task, attack: Attack | None, config: DefenseConfig,
     outcome = RunOutcome(task_id=task.id, attack_id=(attack.id if attack else None),
                          defense=config.name, model=profile.name)
 
-    rng = random.Random((seed << 8) ^ (hash(profile.name) & 0xFFFF))
+    rng = random.Random((seed * 1_000_003) ^ _stable_offset(profile.name))
     hijacked = False
 
     for benign in task.plan(state):
