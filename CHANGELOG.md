@@ -13,8 +13,11 @@ derives its own tool calls, instead of only the simulated susceptibility dial.
   - `OllamaAgent`: a local Ollama server, optional.
 - `run_live` reuses the same control plane, metrics, and objective checks as the simulated
   path, so results are directly comparable.
-- New CLI: `agentsec run-live` and `agentsec live-demo`.
-- 21 new tests (41 total): the live agent is hijacked purely by reading attacker-controlled
+- New CLI: `agentsec run-live`, `agentsec live-demo`, and `agentsec live-experiment` (the
+  security-utility table and Pareto frontier computed with the live agent).
+- Reproducibility fix: the run loop no longer seeds its RNG from Python's per-process
+  ``hash``, so every result is identical across machines and independent of PYTHONHASHSEED.
+- 23 new tests (43 total): the live agent is hijacked purely by reading attacker-controlled
   content with no defense, is stopped by the combined stack, and a cautious agent that
   ignores instructions found inside data is never hijacked.
 

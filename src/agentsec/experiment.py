@@ -100,6 +100,49 @@ def summarise_all(models: list[str] | None = None, seeds: int = 5) -> list[Defen
     return [summarise(PRESETS[name](), models, seeds) for name in PRESETS]
 
 
+def live_in_scope(backend) -> list[Attack]:
+    """Attacks the live agent actually performs with no defense, i.e. the ones it is
+    vulnerable to. These form the honest denominator for the live security rate."""
+    from agentsec.live import run_live
+    scope = []
+    for a in ATTACKS.values():
+        if run_live(get_task(a.task_id), a, PRESETS["no_defense"](), backend).attack_success:
+            scope.append(a)
+    return scope
+
+
+def live_summarise(config: DefenseConfig, backend, in_scope: list[Attack]) -> DefenseSummary:
+    """Security-utility summary computed with a live agent (deterministic, so one pass each).
+    The rate denominator is the set of attacks the agent is actually vulnerable to."""
+    from agentsec.live import run_live
+    atk = [run_live(get_task(a.task_id), a, config, backend) for a in in_scope]
+    ben = [run_live(t, None, config, backend) for t in TASKS.values()]
+
+    a_succ = sum(1 for o in atk if o.attack_success)
+    exfil = sum(1 for o in atk if o.exfiltration)
+    b_succ = sum(1 for o in ben if o.benign_success)
+    fb = sum(1 for o in ben if o.false_blocks > 0)
+    ttc = [o.time_to_compromise for o in atk if o.time_to_compromise is not None]
+
+    return DefenseSummary(
+        defense=config.name,
+        attack_runs=len(atk), attack_success=wilson(a_succ, len(atk)),
+        benign_runs=len(ben), benign_success=wilson(b_succ, len(ben)),
+        false_block=wilson(fb, len(ben)),
+        approval_burden=mean([o.approval_burden for o in ben]),
+        latency=mean([o.latency for o in atk + ben]),
+        cost=mean([o.cost for o in atk + ben]),
+        exfiltration=wilson(exfil, len(atk)),
+        time_to_compromise=(mean(ttc) if ttc else None))
+
+
+def live_summarise_all(backend=None) -> list[DefenseSummary]:
+    from agentsec.live import ParsingAgent
+    backend = backend or ParsingAgent()
+    in_scope = live_in_scope(backend)
+    return [live_summarise(PRESETS[name](), backend, in_scope) for name in PRESETS]
+
+
 def pareto_frontier(summaries: list[DefenseSummary]) -> list[DefenseSummary]:
     """Non-dominated set on (security up, utility up). Higher is better on both axes."""
     frontier = []
@@ -160,6 +203,9 @@ def verify_gate(seeds: int = 8) -> list[GateResult]:
 __all__ = [
     "DefenseSummary",
     "GateResult",
+    "live_in_scope",
+    "live_summarise",
+    "live_summarise_all",
     "pareto_frontier",
     "run_attack_matrix",
     "run_benign_matrix",

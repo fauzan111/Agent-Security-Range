@@ -60,6 +60,18 @@ def test_quarantine_hides_poison_from_the_reader():
     assert all(r.kind != "memory" for r in obs.readables)
 
 
+def test_live_experiment_frontier_and_monotonicity():
+    """The live security-utility sweep: undefended is fully compromised, the combined stack
+    reaches full security and sits on the Pareto frontier."""
+    from agentsec.experiment import live_summarise_all, pareto_frontier
+    summaries = {s.defense: s for s in live_summarise_all(ParsingAgent())}
+    assert summaries["no_defense"].attack_success.point == 1.0     # every in-scope attack lands
+    assert summaries["combined_monitor"].attack_success.point == 0.0
+    assert summaries["no_defense"].security < summaries["deterministic"].security
+    frontier = {s.defense for s in pareto_frontier(list(summaries.values()))}
+    assert "combined_monitor" in frontier
+
+
 def test_backend_spec_parsing():
     assert isinstance(get_backend("parsing"), ParsingAgent)
     assert get_backend("parsing").follow_content

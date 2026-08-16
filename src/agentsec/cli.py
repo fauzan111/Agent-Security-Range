@@ -209,6 +209,32 @@ def run_live_cmd(
             typer.echo(f"  step {inc.step:>3}  [{inc.guard or inc.kind}] {inc.detail}")
 
 
+@app.command(name="live-experiment")
+def live_experiment_cmd(
+    backend: str = typer.Option("parsing", help="Live backend: parsing | hosted[:model] | "
+                                                "ollama[:model]."),
+) -> None:
+    """Security-utility table and Pareto frontier computed with a live agent that reads
+    content, the same study as `experiment` but driven by real tool-call decisions."""
+    from agentsec.experiment import live_summarise_all, pareto_frontier
+    from agentsec.live import get_backend
+    be = get_backend(backend)
+    summaries = live_summarise_all(be)
+    frontier = {s.defense for s in pareto_frontier(summaries)}
+    typer.echo(f"Live agent: {be.name}   (rate denominator = attacks it is vulnerable to "
+               f"undefended)\n")
+    header = (f"{'defense':18} {'attack_succ':>12} {'benign_succ':>12} {'false_block':>12} "
+              f"{'approvals':>10} {'latency':>8}  frontier")
+    typer.echo(header)
+    typer.echo("-" * len(header))
+    for s in summaries:
+        mark = "  <==" if s.defense in frontier else ""
+        typer.echo(
+            f"{s.defense:18} {_pct(s.attack_success.point):>12} "
+            f"{_pct(s.benign_success.point):>12} {_pct(s.false_block.point):>12} "
+            f"{s.approval_burden:>10.2f} {s.latency:>8.1f}{mark}")
+
+
 @app.command(name="live-demo")
 def live_demo() -> None:
     """A real content-reading agent, hijacked by what it reads, then stopped by the stack."""

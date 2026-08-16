@@ -114,6 +114,7 @@ agentsec live-demo                                   # a real content-reading ag
 agentsec run-live --attack delayed-memory --defense no_defense        # hijacked by content
 agentsec run-live --attack delayed-memory --defense combined_monitor  # stopped, with trace
 agentsec run-live --attack goal-hijack   --backend parsing-cautious   # an agent that resists
+agentsec live-experiment                             # security-utility table with the live agent
 ```
 
 * `parsing` (default): reads email, docs, memory, and tool manifests and parses instructions
