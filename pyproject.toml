@@ -1,0 +1,34 @@
+[project]
+name = "agentsec-range"
+version = "0.1.0"
+description = "Long-horizon agent attack/defense cyber range, mapped to OWASP ASI01-10."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.5",
+    "typer>=0.9",
+]
+
+[project.optional-dependencies]
+# Heavier plotting/stats extras are optional; the core range runs on stdlib + pydantic + typer.
+stats = ["numpy>=1.26", "scipy>=1.11"]
+plot = ["matplotlib>=3.8"]
+dev = ["pytest>=8.0", "ruff>=0.3", "mypy>=1.8"]
+
+[project.scripts]
+agentsec = "agentsec.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentsec"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
