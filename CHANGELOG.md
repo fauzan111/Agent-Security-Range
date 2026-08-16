@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.2.0
+
+Live agents: the range can now be driven by an agent that reads the environment as text and
+derives its own tool calls, instead of only the simulated susceptibility dial.
+
+- Pluggable `AgentBackend` interface with three backends, all behind one protocol:
+  - `ParsingAgent`: reads email, docs, memory, and tool manifests and parses instructions
+    into tool calls. No model, no API key, fully offline. Runs today.
+  - `HostedAgent`: any OpenAI/Anthropic-compatible chat endpoint over HTTP, configured from
+    the environment. Needs only an API key, no local model.
+  - `OllamaAgent`: a local Ollama server, optional.
+- `run_live` reuses the same control plane, metrics, and objective checks as the simulated
+  path, so results are directly comparable.
+- New CLI: `agentsec run-live` and `agentsec live-demo`.
+- 21 new tests (41 total): the live agent is hijacked purely by reading attacker-controlled
+  content with no defense, is stopped by the combined stack, and a cautious agent that
+  ignores instructions found inside data is never hijacked.
+
 ## v0.1.0
 
 First tagged release. A fully offline, reproducible agent attack/defense cyber range mapped

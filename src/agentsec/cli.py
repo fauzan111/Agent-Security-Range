@@ -179,6 +179,60 @@ def demo(seeds: int = typer.Option(20, help="Seeds per cell.")) -> None:
                "acceptance gate.")
 
 
+@app.command(name="run-live")
+def run_live_cmd(
+    attack: str = typer.Option("goal-hijack", help="Attack id (or 'none' for a benign run)."),
+    defense: str = typer.Option("no_defense", help="Defense preset."),
+    backend: str = typer.Option("parsing", help="parsing | parsing-cautious | hosted[:model] "
+                                                "| ollama[:model]."),
+    seed: int = typer.Option(0, help="Random seed."),
+) -> None:
+    """Run one scenario with a live agent that reads content and derives its own tool calls."""
+    from agentsec.live import get_backend, run_live
+    atk = None if attack == "none" else get_attack(attack)
+    task = get_task(atk.task_id if atk else "pay-invoice")
+    be = get_backend(backend)
+    o = run_live(task, atk, get_preset(defense), be, seed=seed)
+    typer.echo(f"Task:      {o.task_id}")
+    typer.echo(f"Attack:    {o.attack_id or 'none'}")
+    typer.echo(f"Defense:   {o.defense}    Agent: {o.model}    Seed: {seed}")
+    typer.echo("-" * 60)
+    typer.echo(f"attack_success:      {o.attack_success}")
+    typer.echo(f"benign_success:      {o.benign_success}")
+    typer.echo(f"exfiltration:        {o.exfiltration}")
+    typer.echo(f"unauthorized_effects:{o.unauthorized_effects}")
+    typer.echo(f"false_blocks:        {o.false_blocks}")
+    if o.incidents:
+        typer.echo("-" * 60)
+        typer.echo("Incident trace:")
+        for inc in o.incidents:
+            typer.echo(f"  step {inc.step:>3}  [{inc.guard or inc.kind}] {inc.detail}")
+
+
+@app.command(name="live-demo")
+def live_demo() -> None:
+    """A real content-reading agent, hijacked by what it reads, then stopped by the stack."""
+    from agentsec.live import ParsingAgent, run_live
+    typer.echo("Live ParsingAgent: it reads emails, docs, memory and tool manifests as text\n"
+               "and derives its own tool calls. No model or API key required.\n")
+    naive, cautious = ParsingAgent(), ParsingAgent(follow_content=False)
+    typer.echo(f"{'attack':22} {'no_defense':>11} {'combined_mon':>13} {'cautious_agent':>15}")
+    for aid in ("goal-hijack", "stored-injection", "delayed-memory", "malicious-manifest",
+                "covert-exfiltration", "reward-hacking"):
+        a = get_attack(aid)
+        task = get_task(a.task_id)
+        nd = run_live(task, a, get_preset("no_defense"), naive).attack_success
+        cm = run_live(task, a, get_preset("combined_monitor"), naive).attack_success
+        ca = run_live(task, a, get_preset("no_defense"), cautious).attack_success
+        typer.echo(f"{a.asi.value} {a.id:18} {nd!s:>11} {cm!s:>13} {ca!s:>15}")
+    typer.echo("\nThe agent gets hijacked purely by reading attacker-controlled content, the\n"
+               "combined control plane stops every case, and a cautious agent that ignores\n"
+               "instructions found inside data is never hijacked in the first place.")
+    typer.echo("\nSwap in a real LLM with no local model:  "
+               "agentsec run-live --backend hosted:gpt-4o-mini\n"
+               "(set AGENTSEC_LLM_BASE, AGENTSEC_LLM_KEY, AGENTSEC_LLM_MODEL first).")
+
+
 def _main() -> None:
     app()
 

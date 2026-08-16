@@ -103,6 +103,30 @@ Deterministic controls stop both because they reason over authority and provenan
 text. `agentsec demo` shows the contrast in three lines; `agentsec verify-gate` proves it
 attack by attack.
 
+## Live agents (no local model required)
+
+The range can be driven by an agent that actually reads the environment as text and derives
+its own tool calls, not only the simulated susceptibility dial. Three backends sit behind one
+interface:
+
+```bash
+agentsec live-demo                                   # a real content-reading agent, offline
+agentsec run-live --attack delayed-memory --defense no_defense        # hijacked by content
+agentsec run-live --attack delayed-memory --defense combined_monitor  # stopped, with trace
+agentsec run-live --attack goal-hijack   --backend parsing-cautious   # an agent that resists
+```
+
+* `parsing` (default): reads email, docs, memory, and tool manifests and parses instructions
+  into tool calls. No model, no API key, fully offline. This is the one that runs today.
+* `hosted:<model>`: any OpenAI/Anthropic-compatible chat endpoint. Set `AGENTSEC_LLM_BASE`,
+  `AGENTSEC_LLM_KEY`, and `AGENTSEC_LLM_MODEL`, then `--backend hosted:gpt-4o-mini`. No local
+  model needed.
+* `ollama:<model>`: a local Ollama server, for when one is installed.
+
+The live agent gets hijacked purely by reading attacker-controlled content, the combined
+control plane stops every case, and a cautious agent that ignores instructions found inside
+data is never hijacked in the first place.
+
 ## Acceptance gate
 
 `agentsec verify-gate` confirms, for every one of the ten attacks, that it (1) succeeds with
@@ -131,6 +155,7 @@ src/agentsec/
                     manifests, monitor, breaker, classifier, presets
   incident.py       append-only incident recorder
   agent.py          simulated agent + run loop
+  live.py           live agents (parsing / hosted / ollama) that read content and act
   experiment.py     matrix runner, metrics, Pareto frontier, acceptance gate
   cli.py            the agentsec command
 ```
