@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.0
+
+- `agentsec plot`: renders the security-utility Pareto frontier to `docs/pareto.png` with
+  Wilson intervals on both axes and the non-dominated point highlighted. `--live` computes it
+  with the live parsing agent. The image now leads the README.
+- New `plotting.py` module (matplotlib behind the optional `plot` extra, headless/CI-safe).
+- 44 tests: the plot writes a valid PNG.
+
 ## v0.2.0
 
 Live agents: the range can now be driven by an agent that reads the environment as text and

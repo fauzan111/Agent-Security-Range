@@ -132,6 +132,25 @@ def pareto(
         typer.echo(f"{s.defense:18} {sec:>20} {ut:>20}{mark}")
 
 
+@app.command()
+def plot(
+    out: str = typer.Option("docs/pareto.png", help="Output image path."),
+    seeds: int = typer.Option(5, help="Seeds per cell."),
+    live: bool = typer.Option(False, help="Use the live parsing agent instead of simulated."),
+) -> None:
+    """Render the security-utility Pareto frontier to an image (needs the plot extra)."""
+    from agentsec.plotting import pareto_plot
+    if live:
+        from agentsec.experiment import live_summarise_all
+        summaries = live_summarise_all()
+        subtitle = "live parsing agent, one deterministic pass per cell"
+    else:
+        summaries = summarise_all(seeds=seeds)
+        subtitle = f"simulated agents, {seeds} seeds/cell, Wilson 95% intervals"
+    path = pareto_plot(summaries, out, subtitle=subtitle)
+    typer.echo(f"wrote {path}")
+
+
 @app.command(name="verify-gate")
 def verify_gate_cmd(
     seeds: int = typer.Option(8, help="Seeds per attack."),

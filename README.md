@@ -103,6 +103,22 @@ Deterministic controls stop both because they reason over authority and provenan
 text. `agentsec demo` shows the contrast in three lines; `agentsec verify-gate` proves it
 attack by attack.
 
+## Security-utility frontier
+
+![Security-utility Pareto frontier](docs/pareto.png)
+
+Each point is a defense preset: security (`1 - attack-success rate`) against utility
+(benign-task success), with Wilson 95% intervals on both axes. `combined_monitor` reaches the
+top-right corner (full security at no utility cost) and is the single Pareto-optimal point;
+`classifier_only` sits low on security; `paranoid` matches the top on security but sheds
+utility by blocking legitimate external-invoice payments. Regenerate with:
+
+```bash
+pip install -e ".[plot]"
+agentsec plot                 # writes docs/pareto.png (simulated agents)
+agentsec plot --live          # same frontier, computed with the live parsing agent
+```
+
 ## Live agents (no local model required)
 
 The range can be driven by an agent that actually reads the environment as text and derives
@@ -158,6 +174,7 @@ src/agentsec/
   agent.py          simulated agent + run loop
   live.py           live agents (parsing / hosted / ollama) that read content and act
   experiment.py     matrix runner, metrics, Pareto frontier, acceptance gate
+  plotting.py       renders the security-utility frontier to an image
   cli.py            the agentsec command
 ```
 
