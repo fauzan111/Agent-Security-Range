@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.1
+
+- Ollama/local-model robustness: the live HTTP adapter now waits up to 5 minutes (local
+  models are slow to load) and reports server errors, including out-of-memory, as a single
+  clean line instead of a stack trace. `run-live` catches backend errors gracefully.
+- Added `OLLAMA.md`: install, pick a model your machine can load, and run the range through a
+  real local model with `--backend ollama:<model>`.
+
 ## v0.3.0
 
 - `agentsec plot`: renders the security-utility Pareto frontier to `docs/pareto.png` with

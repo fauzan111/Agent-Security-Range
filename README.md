@@ -138,7 +138,9 @@ agentsec live-experiment                             # security-utility table wi
 * `hosted:<model>`: any OpenAI/Anthropic-compatible chat endpoint. Set `AGENTSEC_LLM_BASE`,
   `AGENTSEC_LLM_KEY`, and `AGENTSEC_LLM_MODEL`, then `--backend hosted:gpt-4o-mini`. No local
   model needed.
-* `ollama:<model>`: a local Ollama server, for when one is installed.
+* `ollama:<model>`: a local Ollama server, for when one is installed. See [`OLLAMA.md`](OLLAMA.md)
+  for install and model-size guidance (an 8B model needs a lot of RAM; use `llama3.2` if it
+  will not fit).
 
 The live agent gets hijacked purely by reading attacker-controlled content, the combined
 control plane stops every case, and a cautious agent that ignores instructions found inside

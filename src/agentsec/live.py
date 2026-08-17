@@ -23,7 +23,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import urllib.request
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -207,11 +206,23 @@ def _label_and_build(calls: list[dict], obs: Observation, state: RangeState) -> 
     return reqs
 
 
-def _http_json(url: str, payload: dict, headers: dict, timeout: float = 60.0) -> dict:
+def _http_json(url: str, payload: dict, headers: dict, timeout: float = 300.0) -> dict:
+    """POST JSON and parse the reply. Local models are slow and can fail to load, so the
+    timeout is generous and server errors (for example out-of-memory) surface with the
+    server's own message instead of a raw stack trace."""
+    import urllib.error
     data = json.dumps(payload).encode()
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode())
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode())
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode(errors="replace")[:400]
+        raise RuntimeError(f"model server returned HTTP {exc.code}: {detail}") from exc
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        raise RuntimeError(
+            f"could not reach model server at {url}. Is it running and the model pulled? "
+            f"({exc})") from exc
 
 
 class HostedAgent:

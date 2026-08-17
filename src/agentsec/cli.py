@@ -211,7 +211,11 @@ def run_live_cmd(
     atk = None if attack == "none" else get_attack(attack)
     task = get_task(atk.task_id if atk else "pay-invoice")
     be = get_backend(backend)
-    o = run_live(task, atk, get_preset(defense), be, seed=seed)
+    try:
+        o = run_live(task, atk, get_preset(defense), be, seed=seed)
+    except RuntimeError as exc:
+        typer.secho(f"live backend error: {exc}", fg=typer.colors.RED)
+        raise typer.Exit(code=1) from exc
     typer.echo(f"Task:      {o.task_id}")
     typer.echo(f"Attack:    {o.attack_id or 'none'}")
     typer.echo(f"Defense:   {o.defense}    Agent: {o.model}    Seed: {seed}")
