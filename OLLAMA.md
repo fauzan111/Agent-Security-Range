@@ -46,6 +46,10 @@ results are directly comparable.
 
 - **First call is slow.** The model loads into memory on the first request (tens of seconds).
   The adapter waits up to 5 minutes, so let it finish; later calls are faster.
+- **Context window is capped for you.** Ollama otherwise tries to allocate the model's full
+  128k-token context, whose KV cache needs ~14 GB and fails to load on a normal laptop with
+  `out-of-memory ... failed to allocate buffer for kv cache`. The adapter sets `num_ctx=4096`,
+  which is plenty for these prompts. Override with `OLLAMA_NUM_CTX` if you want more or less.
 - **Custom host or port:** set `OLLAMA_HOST`, for example
   `export OLLAMA_HOST=http://localhost:11434`.
 - **Small models may not tool-call cleanly.** The agent is asked to reply with a JSON list of

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.2
+
+- Ollama now works on normal laptops: the adapter caps the context window (`num_ctx=4096`,
+  override with `OLLAMA_NUM_CTX`). Ollama otherwise allocates the model's full 128k context,
+  whose KV cache needs ~14 GB and fails to load. Verified end to end with `llama3.2`: the real
+  model is hijacked with no defense and blocked by `combined_monitor`.
+- Fixed a missing `urllib.request` import in the live adapter.
+
 ## v0.3.1
 
 - Ollama/local-model robustness: the live HTTP adapter now waits up to 5 minutes (local

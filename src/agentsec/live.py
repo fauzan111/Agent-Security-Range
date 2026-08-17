@@ -23,6 +23,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import urllib.error
+import urllib.request
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -210,7 +212,6 @@ def _http_json(url: str, payload: dict, headers: dict, timeout: float = 300.0) -
     """POST JSON and parse the reply. Local models are slow and can fail to load, so the
     timeout is generous and server errors (for example out-of-memory) surface with the
     server's own message instead of a raw stack trace."""
-    import urllib.error
     data = json.dumps(payload).encode()
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
     try:
@@ -254,16 +255,23 @@ class HostedAgent:
 
 
 class OllamaAgent:
-    """Local Ollama backend (http://localhost:11434). Optional, for when one is installed."""
+    """Local Ollama backend (http://localhost:11434). Optional, for when one is installed.
+
+    ``num_ctx`` caps the context window. Ollama otherwise defaults to the model's full
+    context (128k for llama3.x), whose KV cache needs many gigabytes and will fail to load on
+    a typical laptop. Our prompts are small, so a few thousand tokens is plenty. Override with
+    the ``OLLAMA_NUM_CTX`` environment variable if needed."""
 
     def __init__(self, model: str = "llama3.1") -> None:
         self.host = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
         self.model = model
+        self.num_ctx = int(os.environ.get("OLLAMA_NUM_CTX", "4096"))
         self.name = f"ollama:{model}"
 
     def plan(self, obs: Observation, state: RangeState) -> list[ActionRequest]:
-        body = {"model": self.model, "stream": False, "messages": [
-            {"role": "user", "content": _observation_prompt(obs)}]}
+        body = {"model": self.model, "stream": False,
+                "options": {"temperature": 0, "num_ctx": self.num_ctx},
+                "messages": [{"role": "user", "content": _observation_prompt(obs)}]}
         out = _http_json(f"{self.host}/api/chat", body, {"Content-Type": "application/json"})
         content = out["message"]["content"]
         return _label_and_build(_extract_json_list(content), obs, state)
