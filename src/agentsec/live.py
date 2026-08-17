@@ -277,15 +277,38 @@ class OllamaAgent:
         return _label_and_build(_extract_json_list(content), obs, state)
 
 
+def _normalize_calls(data: object) -> list[dict]:
+    """Accept the shapes models actually emit and return {'action','args'} dicts:
+    a list of {'action','args'} objects, a list of ['action', {args}] pairs, or a single
+    pair/object. Small models vary the format, so the parser tolerates all of them."""
+    if isinstance(data, dict):
+        data = [data]
+    # a lone pair like ["payments.send", {..}] is one call, not a list of two calls
+    if isinstance(data, list) and data and isinstance(data[0], str):
+        data = [data]
+    calls: list[dict] = []
+    for item in data if isinstance(data, list) else []:
+        if isinstance(item, dict) and "action" in item:
+            calls.append({"action": item["action"], "args": item.get("args", {})})
+        elif isinstance(item, list) and item and isinstance(item[0], str):
+            args = item[1] if len(item) > 1 and isinstance(item[1], dict) else {}
+            calls.append({"action": item[0], "args": args})
+    return calls
+
+
 def _extract_json_list(text: str) -> list[dict]:
     start, end = text.find("["), text.rfind("]")
     if start == -1 or end == -1:
         return []
-    try:
-        parsed = json.loads(text[start:end + 1])
-        return [c for c in parsed if isinstance(c, dict)]
-    except json.JSONDecodeError:
-        return []
+    frag = text[start:end + 1]
+    # Try the fragment as-is, then wrapped in an outer array (models often emit
+    # comma-separated arrays without the enclosing brackets).
+    for candidate in (frag, "[" + frag + "]"):
+        try:
+            return _normalize_calls(json.loads(candidate))
+        except json.JSONDecodeError:
+            continue
+    return []
 
 
 # --------------------------------------------------------------------------- #

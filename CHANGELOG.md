@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.3
+
+- Robust tool-call parsing for live LLM backends: accept `{"action","args"}` objects,
+  `["action", {args}]` pairs, and comma-separated arrays without an outer bracket. Small
+  models vary the format; the old parser silently dropped valid calls (benign success read as
+  zero). Added an offline parser test.
+- README case study: a real local model (`llama3.2` via Ollama) measured with
+  `live-experiment`. Deterministic controls drive attack success from 100% to 0% independent
+  of the driving agent; small-model benign competence is reported honestly as the cost.
+
 ## v0.3.2
 
 - Ollama now works on normal laptops: the adapter caps the context window (`num_ctx=4096`,

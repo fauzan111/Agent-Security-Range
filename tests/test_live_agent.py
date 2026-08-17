@@ -72,6 +72,25 @@ def test_live_experiment_frontier_and_monotonicity():
     assert "combined_monitor" in frontier
 
 
+def test_tool_call_parser_tolerates_model_formats():
+    """Small models emit tool calls in several shapes; the parser must accept them all."""
+    from agentsec.live import _extract_json_list
+    # pair form, comma-separated without an outer array (what llama3.2 emitted)
+    pairs = _extract_json_list(
+        '["payments.send", {"to_account": "acct-acme-1122", "amount": 250}],\n'
+        '["docs.read", {"doc_id": "d1"}]')
+    assert [c["action"] for c in pairs] == ["payments.send", "docs.read"]
+    assert pairs[0]["args"]["to_account"] == "acct-acme-1122"
+    # object form
+    objs = _extract_json_list('[{"action": "docs.read", "args": {"doc_id": "d1"}}]')
+    assert objs == [{"action": "docs.read", "args": {"doc_id": "d1"}}]
+    # a lone pair is one call, not two
+    assert _extract_json_list('["payments.send", {"amount": 5}]') == \
+        [{"action": "payments.send", "args": {"amount": 5}}]
+    # prose / refusal yields nothing
+    assert _extract_json_list("I cannot help with that.") == []
+
+
 def test_backend_spec_parsing():
     assert isinstance(get_backend("parsing"), ParsingAgent)
     assert get_backend("parsing").follow_content

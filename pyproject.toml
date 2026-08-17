@@ -1,6 +1,6 @@
 [project]
 name = "agentsec-range"
-version = "0.3.2"
+version = "0.3.3"
 description = "Long-horizon agent attack/defense cyber range, mapped to OWASP ASI01-10."
 readme = "README.md"
 license = {text = "MIT"}

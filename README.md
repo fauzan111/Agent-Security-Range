@@ -103,6 +103,35 @@ Deterministic controls stop both because they reason over authority and provenan
 text. `agentsec demo` shows the contrast in three lines; `agentsec verify-gate` proves it
 attack by attack.
 
+## Case study: a real local model (llama3.2 via Ollama)
+
+Running `agentsec live-experiment --backend ollama:llama3.2` drives the same range with a real
+3B model instead of the parsing agent. Measured numbers (one deterministic pass per cell):
+
+| defense | attack success | benign success | false blocks |
+|---|---:|---:|---:|
+| no_defense | 100% | 20% | 0% |
+| classifier_only | 100% | 20% | 0% |
+| deterministic | **0%** | 20% | 40% |
+| combined_monitor | **0%** | 20% | 40% |
+
+Read honestly, three things stand out:
+
+* **The control plane is model-independent.** A real local model is fully susceptible with no
+  defense (every attack it performs lands), and the deterministic controls drive attack
+  success to zero, exactly as with the simulated and parsing agents. The security result does
+  not depend on which agent drives the range.
+* **A classifier scanning tool calls catches nothing.** A black-box LLM emits only structured
+  tool calls, so there is no injected text on the action for a classifier to flag (a
+  production classifier would instead scan the model's *input* content, catching the
+  visible-injection cases as in the simulated study, and still miss the authorization and
+  delayed-memory ones).
+* **Small-model competence is the honest cost.** llama3.2 (3B) completes only 1 of 5 benign
+  tasks in this strict harness and emits off-task calls the controls correctly block (40%
+  false blocks). This is exactly why the simulated and parsing agents exist: they isolate the
+  defense question from a given model's tool-calling reliability. A larger model would raise
+  benign success; it would not change the security result.
+
 ## Security-utility frontier
 
 ![Security-utility Pareto frontier](docs/pareto.png)
